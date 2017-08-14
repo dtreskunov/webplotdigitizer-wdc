@@ -40,15 +40,27 @@
       (.getPlotData)
       (goog.object/get "dataSeriesColl")))
 
-(defn dataset->table-info [dataset]
+(defn get-id [dataset s]
   (let [name (.-name dataset)
-        id (clojure.string/replace name #"\W+" "_")]
-    {:id id
-     :alias name
-     :columns [{:id "x" :dataType "float" :columnRole "dimension" :columnType "continuous"}
-               {:id "y" :dataType "float" :columnRole "dimension" :columnType "continuous"}
-               {:id "x_pixel" :dataType "int" :columnRole "dimension" :columnType "continuous"}
-               {:id "y_pixel" :dataType "int" :columnRole "dimension" :columnType "continuous"}]}))
+        prefix (if (= name "Default Dataset") "" (str name " "))
+        quote-id #(clojure.string/replace % #"\W+" "_")]
+    (quote-id (str prefix s))))
+
+(defn get-id-dx [dataset] (get-id dataset "x"))
+(defn get-id-dy [dataset] (get-id dataset "y"))
+(defn get-id-px [dataset] (get-id dataset "x pixel"))
+(defn get-id-py [dataset] (get-id dataset "y pixel"))
+
+(defn dataset->column-infos [dataset]
+  [{:id (get-id-dx dataset) :dataType "float" :columnRole "dimension" :columnType "continuous"}
+   {:id (get-id-dy dataset) :dataType "float" :columnRole "dimension" :columnType "continuous"}
+   {:id (get-id-px dataset) :dataType "int" :columnRole "dimension" :columnType "continuous"}
+   {:id (get-id-py dataset) :dataType "int" :columnRole "dimension" :columnType "continuous"}])
+
+(defn datasets->table-infos [datasets]
+  [{:id "WebPlotDigitizer"
+    :alias "Datasets"
+    :columns (mapcat dataset->column-infos datasets)}])
 
 (deftype WebPlotDigitizerWDC []
   wdc/IWebDataConnector
@@ -57,26 +69,32 @@
   (get-standard-connections [this] [])
   (get-name [this] "WebPlotDigitizer")
   (get-table-infos [this]
-    (map dataset->table-info (get-datasets)))
-  (<get-rows [this {:keys [alias] :as table-info} increment-value filter-values]
-    (let [out (async/chan)]
-      (if-let [dataset (first (filter #(= alias (.-name %)) (get-datasets)))]
-        (if-let [axes (-> js/wpd (.-appData) (.getPlotData) (.-axes))]
-          (let [p->d (goog.object/get axes "pixelToData")
-                get-pixel (goog.object/get dataset "getPixel")
-                get-count (goog.object/get dataset "getCount")
-                get-row (fn [i]
-                          (let [pixel (get-pixel i)
-                                px (goog.object/get pixel "x")
-                                py (goog.object/get pixel "y")
-                                [dx dy] (p->d px py)]
-                            {:x dx :y dy :x_pixel px :y_pixel py}))
-                rows (map get-row (range (get-count)))]
-            (async/go
-              (async/>! out rows)
-              (async/close! out)))
-          (throw "Axes are not calibrated"))
-        (throw (str "Data set named \"" alias "\" is not defined")))
+    (datasets->table-infos (get-datasets)))
+  (<get-rows [this table-info increment-value filter-values]
+    (let [out (async/chan)
+          axes (or (-> js/wpd (.-appData) (.getPlotData) (.-axes))
+                   (throw "Axes are not calibrated"))
+          p->d (goog.object/get axes "pixelToData")]
+      (async/go
+        (doseq [dataset (get-datasets)
+                :let [get-pixel (goog.object/get dataset "getPixel")
+                      get-count (goog.object/get dataset "getCount")
+                      id-dx (get-id-dx dataset)
+                      id-dy (get-id-dy dataset)
+                      id-px (get-id-px dataset)
+                      id-py (get-id-py dataset)
+                      get-row (fn [i]
+                                (let [pixel (get-pixel i)
+                                      px (goog.object/get pixel "x")
+                                      py (goog.object/get pixel "y")
+                                      [dx dy] (p->d px py)]
+                                  {id-dx dx
+                                   id-dy dy
+                                   id-px px
+                                   id-py py}))
+                      rows (map get-row (range (get-count)))]]
+          (async/>! out rows))
+        (async/close! out))
       out))
   (shutdown [this]
     {:connection-data {:json (get-json)
