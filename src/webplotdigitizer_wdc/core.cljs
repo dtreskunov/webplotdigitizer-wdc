@@ -45,8 +45,10 @@
         id (clojure.string/replace name #"\W+" "_")]
     {:id id
      :alias name
-     :columns [{:id "x" :dataType "float"}
-               {:id "y" :dataType "float"}]}))
+     :columns [{:id "x" :dataType "float" :columnRole "dimension" :columnType "continuous"}
+               {:id "y" :dataType "float" :columnRole "dimension" :columnType "continuous"}
+               {:id "x_pixel" :dataType "int" :columnRole "dimension" :columnType "continuous"}
+               {:id "y_pixel" :dataType "int" :columnRole "dimension" :columnType "continuous"}]}))
 
 (deftype WebPlotDigitizerWDC []
   wdc/IWebDataConnector
@@ -60,18 +62,16 @@
     (let [out (async/chan)]
       (if-let [dataset (first (filter #(= alias (.-name %)) (get-datasets)))]
         (if-let [axes (-> js/wpd (.-appData) (.getPlotData) (.-axes))]
-          (let [pixel->data (fn [pixel]
-                              (let [px (goog.object/get pixel "x")
-                                    py (goog.object/get pixel "y")
-                                    f (goog.object/get axes "pixelToData")]
-                                (f px py)))
+          (let [p->d (goog.object/get axes "pixelToData")
+                get-pixel (goog.object/get dataset "getPixel")
+                get-count (goog.object/get dataset "getCount")
                 get-row (fn [i]
-                          (let [get-pixel (goog.object/get dataset "getPixel")
-                                pixel (get-pixel i)
-                                [dx dy] (pixel->data pixel)]
-                            {:x dx :y dy}))
-                count ((goog.object/get dataset "getCount"))
-                rows (map get-row (range count))]
+                          (let [pixel (get-pixel i)
+                                px (goog.object/get pixel "x")
+                                py (goog.object/get pixel "y")
+                                [dx dy] (p->d px py)]
+                            {:x dx :y dy :x_pixel px :y_pixel py}))
+                rows (map get-row (range (get-count)))]
             (async/go
               (async/>! out rows)
               (async/close! out)))
@@ -96,8 +96,7 @@
            (when (-> js/wpd (.-appData) (.isAligned))
              (-> js/wpd (.-acquireData) (.load))))))
       "gatherData"
-      (do
-        (set-json! (get-in state [:connection-data :json]))))))
+      (set-json! (get-in state [:connection-data :json])))))
 
 (def wdc (WebPlotDigitizerWDC.))
 (wdc/register! wdc)
