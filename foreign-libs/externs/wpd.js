@@ -188,6 +188,7 @@ var wpd = {
     "forceHandlerRepaint": function () {},
     "getAllContexts": function () {},
     "getDisplaySize": function () {},
+    "getImageDataURL": function () {},
     "getImageSize": function () {},
     "getRepainter": function () {},
     "getZoomRatio": function () {},
@@ -361,8 +362,10 @@ var wpd = {
   },
   "saveResume": {
     "download": function () {},
+    "generateJSON": function () {},
     "load": function () {},
     "read": function () {},
+    "resumeFromJSON": function () {},
     "save": function () {}
   },
   "scriptInjector": {

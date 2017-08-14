@@ -45,4 +45,4 @@ get live reloading, nor a REPL.
 
 Copyright © 2017 Tableau
 
-Distributed under the AGPL v3
+Distributed under GNU AGPL v3

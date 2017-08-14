@@ -42,10 +42,18 @@
 <body>
 
 <div id="loadingCurtain" style="position: absolute; top: 0px; left: 0px; z-index: 100; width: 100%; height: 100%; background-color: white;">
-Loading application, please wait...
-<br/>
-<br/>
-Problems loading? Make sure you have a recent version of Google Chrome, Firefox, Safari or Internet Explorer 11 installed.
+    <div class="popup" style="width: 800px; visibility: visible; top: 2em; left: 2em;">
+        <div class="popupheading" style="cursor: default;">WebPlotDigitizer Tableau Connector</div>
+        <p>
+          This is a Web Data Connector (<a target="_blank" href="https://onlinehelp.tableau.com/current/pro/desktop/en-us/examples_web_data_connector.html">what's this?</a>). Open this page inside Tableau to connect to your data.
+        </p>
+        <p>Go <a href="http://arohatgi.info/WebPlotDigitizer/index.html">here</a> if you're looking for the original browser-based version by Ankit Rohatgi.</a>
+        </p>
+        <p><a href="tableau://do-something-cool">Launch Tableau</a></p>
+        <p>
+          <div style="position:relative;height:0;padding-bottom:56.25%"><iframe src="https://www.youtube.com/embed/P7GbGdMvopU?ecver=2" width="640" height="360" frameborder="0" style="position:absolute;width:100%;height:100%;left:0" allowfullscreen></iframe></div>
+        </p>
+    </div>
 </div>
 
 <div id="allContainer">
@@ -57,11 +65,7 @@ Problems loading? Make sure you have a recent version of Google Chrome, Firefox,
     <div class="wpd-menu-dropdown">
         <ul>
             <li id="wpd-filemenu-loadimage" onclick="wpd.popup.show('loadNewImage');">Load Image</li>
-            <li id="wpd-filemenu-capture" onclick="wpd.webcamCapture.start();">Webcam Capture</li>
-            <li id="wpd-filemenu-runscript" onclick="wpd.scriptInjector.start();">Run Script</li>
-            <li id="wpd-filemenu-saveimage" onclick="wpd.graphicsWidget.saveImage();">Save Image</li>
-            <li id="wpd-filemenu-exportdata" onclick="wpd.saveResume.save();">Export JSON</li>
-            <li id="wpd-filemenu-import" onclick="wpd.saveResume.load();">Import JSON</li>
+            <li id="wpd-filemenu-export-tableau" onclick="webplotdigitizer_wdc.core.go();">Return to Tableau</li>
         </ul>
     </div>
 </div>
@@ -97,7 +101,6 @@ Problems loading? Make sure you have a recent version of Google Chrome, Firefox,
         <ul>
             <li id="wpd-datamenu-acquire" onclick="wpd.acquireData.load();">Acquire Data</li>
             <li id="wpd-datamenu-manage" onclick="wpd.dataSeriesManagement.manage();">Manage Datasets</li>
-            <li id="wpd-datamenu-manage" onclick="wpd.popup.show('export-all-data-popup');">Export All Data</li>
         </ul>
     </div>
 </div>
@@ -566,12 +569,8 @@ Stroke Width <input type="range" id="eraseThickness" min="1" max="150" value="20
   <p align="center"><textarea id="digitizedDataTable" style="width: 480px; height: 250px;"></textarea></p>
   <p align="center">
     <input type="button" value="Select All" onclick="wpd.dataTable.selectAll();"/>
-        <input type="button" value="Download .CSV" onclick="wpd.dataTable.generateCSV();"/>
-    <input type="button" value="Graph in Plotly*" onclick="wpd.dataTable.exportToPlotly();"/>
     <input type="button" value="Close" onclick="wpd.popup.close('csvWindow');"/>
   </p>
-  <p align="center" class="footnote">*Plotly is a secure data analysis and graphing site with data sharing and access controls.</p>
-  <p align="center" class="footnote">Visit <a href="http://plot.ly" target="plotlyWebsite">http://plot.ly</a> for details.</p>
     </td>
     <td valign="top" style="width:250px;">
     <!-- data side controls -->

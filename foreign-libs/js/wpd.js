@@ -52,8 +52,6 @@ wpd.loadRemoteData = function() {
     return false;
 };
 
-document.addEventListener("DOMContentLoaded", wpd.initApp, true);
-
 /*
 	WebPlotDigitizer - http://arohatgi.info/WebPlotDigitizer
 
@@ -4393,10 +4391,13 @@ wpd.graphicsWidget = (function () {
         firstLoad = false;
     }
 
-    function loadImageFromSrc(imgSrc) {
+    function loadImageFromSrc(imgSrc, callback) {
         var originalImage = document.createElement('img');
         originalImage.onload = function () {
             loadImage(originalImage);
+            if (callback != null) {
+                callback();
+            }
         };
         originalImage.src = imgSrc;
     }
@@ -4484,6 +4485,10 @@ wpd.graphicsWidget = (function () {
 
     function getImageData() {
         return originalImageData;
+    }
+
+    function getImageDataURL(type, encoderOptions) {
+        return $oriImageCanvas && $oriImageCanvas.toDataURL(type, encoderOptions);
     }
 
     function setTool(tool) {
@@ -4596,6 +4601,7 @@ wpd.graphicsWidget = (function () {
         updateZoomToImagePosn: updateZoomToImagePosn,
 
         getDisplaySize: getDisplaySize,
+        getImageDataURL: getImageDataURL,
         getImageSize: getImageSize,
 
         copyImageDataLayerToScreen: copyImageDataLayerToScreen,
@@ -9449,7 +9455,9 @@ wpd.saveResume = (function () {
         save: save,
         load: load,
         download: download,
-        read: read
+        read: read,
+        generateJSON: generateJSON,
+        resumeFromJSON: resumeFromJSON
     };
 })();
 /*
