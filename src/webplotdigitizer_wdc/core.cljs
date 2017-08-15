@@ -17,7 +17,7 @@
 (defn get-image []
   (-> js/wpd
       (.-graphicsWidget)
-      (.getImageDataURL)))
+      (.getImageDataURL "image/jpeg" 0.92)))
 
 (defn set-json! [s]
   (when-let [obj (.parse js/JSON s)]
