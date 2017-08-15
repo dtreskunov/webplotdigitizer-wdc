@@ -4268,20 +4268,17 @@ wpd.graphicsWidget = (function () {
 
     function getDroppedUri(ev, callback) {
         var uriFilter = function(uri) {
-            return (uri.startsWith("http://") || uri.startsWith("https://"));
+            return (uri.indexOf("http://") == 0 || uri.indexOf("https://") == 0);
         };
-        for (var i = 0; i < ev.dataTransfer.items.length; i++) {
-            var item = ev.dataTransfer.items[i];
-            if (item.type === "text/uri-list") {
-                item.getAsString(function(uriList) {
-                    var uri = uriList.split(/\n/).filter(uriFilter)[0];
-                    if (uri != null) {
-                        callback(uri);
-                        return;
-                    }
-                });
-            }
+        var uriList = ev.dataTransfer.getData("text/plain");
+        if (uriList == null) {
+            return;
         }
+        var uri = uriList.split(/\n/).filter(uriFilter)[0];
+        if (uri == null) {
+            return;
+        }
+        callback(uri);
     }
 
     function wrapCors(uri) {
