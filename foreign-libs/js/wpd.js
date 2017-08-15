@@ -4266,11 +4266,38 @@ wpd.graphicsWidget = (function () {
         hoverTimer = setTimeout(hoverOverCanvas(ev), 10);
     }
 
+    function getDroppedUri(ev, callback) {
+        var uriFilter = function(uri) {
+            return (uri.startsWith("http://") || uri.startsWith("https://"));
+        };
+        for (var i = 0; i < ev.dataTransfer.items.length; i++) {
+            var item = ev.dataTransfer.items[i];
+            if (item.type === "text/uri-list") {
+                item.getAsString(function(uriList) {
+                    var uri = uriList.split(/\n/).filter(uriFilter)[0];
+                    if (uri != null) {
+                        callback(uri);
+                        return;
+                    }
+                });
+            }
+        }
+    }
+
+    function wrapCors(uri) {
+        return (wpd.corsProxy == null ? uri : wpd.corsProxy + "/" + uri);
+    }
+
     function dropHandler(ev) {
-        wpd.busyNote.show();
-        var allDrop = ev.dataTransfer.files;
-        if (allDrop.length === 1) {
-            fileLoader(allDrop[0]);
+        var files = ev.dataTransfer.files;
+        if (files.length === 1) {
+            wpd.busyNote.show();
+            fileLoader(files[0]);
+        } else {
+            getDroppedUri(ev, function(uri) {
+                wpd.busyNote.show();
+                loadImageFromSrc(wrapCors(uri));
+            });
         }
     }
 
@@ -4393,6 +4420,7 @@ wpd.graphicsWidget = (function () {
 
     function loadImageFromSrc(imgSrc, callback) {
         var originalImage = document.createElement('img');
+        originalImage.crossOrigin = "Anonymous";
         originalImage.onload = function () {
             loadImage(originalImage);
             if (callback != null) {

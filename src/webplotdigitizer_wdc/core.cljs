@@ -7,7 +7,7 @@
             [wpd])
   (:require-macros [cljs.core.async.macros :as async]))
 
-(set! *warn-on-infer* true)
+(goog.object/setIfUndefined js/wpd "corsProxy" "https://dtreskunov-cors-anywhere.herokuapp.com")
 
 (defn get-json []
   (-> js/wpd
