@@ -4417,7 +4417,9 @@ wpd.graphicsWidget = (function () {
 
     function loadImageFromSrc(imgSrc, callback) {
         var originalImage = document.createElement('img');
-        originalImage.crossOrigin = "Anonymous";
+        if (imgSrc.substring(0, 5) !== "data:") {
+            originalImage.crossOrigin = "Anonymous";
+        }
         originalImage.onload = function () {
             loadImage(originalImage);
             if (callback != null) {
