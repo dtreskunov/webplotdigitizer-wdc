@@ -7,7 +7,9 @@
             [wpd])
   (:require-macros [cljs.core.async.macros :as async]))
 
-(goog.object/setIfUndefined js/wpd "corsProxy" "https://dtreskunov-cors-anywhere.herokuapp.com")
+(-> js/wpd
+    .-appData
+    (.setCorsProxy "https://dtreskunov-cors-anywhere.herokuapp.com"))
 
 (defn get-json []
   (-> js/wpd
@@ -45,26 +47,34 @@
       (.getPlotData)
       (goog.object/get "dataSeriesColl")))
 
-(defn get-id [dataset s]
-  (let [name (.-name dataset)
-        prefix (if (= name "Default Dataset") "" (str name " "))
-        quote-id #(clojure.string/replace % #"\W+" "_")]
-    (quote-id (str prefix s))))
+(defn get-all-data
+  "Returns seq of {:strs [name fields fieldDateFormat rawData isFieldSortable]}"
+  []
+  (->> (get-datasets)
+       (map (-> js/wpd .-plotDataProvider .-getData))
+       js->clj))
 
-(defn get-id-dx [dataset] (get-id dataset "x"))
-(defn get-id-dy [dataset] (get-id dataset "y"))
-(defn get-id-px [dataset] (get-id dataset "x pixel"))
-(defn get-id-py [dataset] (get-id dataset "y pixel"))
+(defn get-alias [dataset-name field-name]
+  (str dataset-name ", " field-name))
 
-(defn dataset->column-infos [dataset]
-  [{:id (get-id-dx dataset) :dataType "float" :columnRole "dimension" :columnType "continuous"}
-   {:id (get-id-dy dataset) :dataType "float" :columnRole "dimension" :columnType "continuous"}
-   {:id (get-id-px dataset) :dataType "int" :columnRole "dimension" :columnType "continuous"}
-   {:id (get-id-py dataset) :dataType "int" :columnRole "dimension" :columnType "continuous"}])
+(defn get-id [dataset-name field-name]
+  (clojure.string/replace (get-alias dataset-name field-name)
+                          #"\W+" "_"))
 
-(defn datasets->table-infos [datasets]
-  [{:id "WebPlotDigitizer"
-    :columns (mapcat dataset->column-infos datasets)}])
+(defn data->column-infos [{:strs [name fields fieldDateFormat rawData isFieldSortable]}]
+  (for [i (range (count fields))
+        :let [field (nth fields i)
+              sortable? (nth isFieldSortable i)]]
+    {:id (get-id name field)
+     :alias (get-alias name field)
+     :dataType (if sortable? "float" "string")
+     :columnRole "dimension"
+     :columnType (if sortable? "continuous" "discrete")}))
+
+(defn data->rows [{:strs [name fields fieldDateFormat rawData isFieldSortable]}]
+  (let [ids (for [field fields] (get-id name field))]
+    (for [row rawData]
+      (zipmap ids row))))
 
 (deftype WebPlotDigitizerWDC []
   wdc/IWebDataConnector
@@ -73,31 +83,14 @@
   (get-standard-connections [this] [])
   (get-name [this] (or (get-image-name) "WebPlotDigitizer"))
   (get-table-infos [this]
-    (datasets->table-infos (get-datasets)))
+    [{:id "WebPlotDigitizer"
+      :alias "image"
+      :columns (mapcat data->column-infos (get-all-data))}])
   (<get-rows [this table-info increment-value filter-values]
-    (let [out (async/chan)
-          axes (or (-> js/wpd (.-appData) (.getPlotData) (.-axes))
-                   (throw "Axes are not calibrated"))
-          p->d (goog.object/get axes "pixelToData")]
+    (let [out (async/chan)]
       (async/go
-        (doseq [dataset (get-datasets)
-                :let [get-pixel (goog.object/get dataset "getPixel")
-                      get-count (goog.object/get dataset "getCount")
-                      id-dx (get-id-dx dataset)
-                      id-dy (get-id-dy dataset)
-                      id-px (get-id-px dataset)
-                      id-py (get-id-py dataset)
-                      get-row (fn [i]
-                                (let [pixel (get-pixel i)
-                                      px (goog.object/get pixel "x")
-                                      py (goog.object/get pixel "y")
-                                      [dx dy] (p->d px py)]
-                                  {id-dx dx
-                                   id-dy dy
-                                   id-px px
-                                   id-py py}))
-                      rows (map get-row (range (get-count)))]]
-          (async/>! out rows))
+        (doseq [data (get-all-data)]
+          (async/>! out (data->rows data)))
         (async/close! out))
       out))
   (shutdown [this]
@@ -125,6 +118,8 @@
 
 (defn ^:export go []
   (println "Go!")
+  (or (-> js/wpd (.-appData) (.getPlotData) (.-axes))
+      (throw "Axes are not calibrated."))
   (wdc/go! wdc))
 
 (defn on-js-reload []
