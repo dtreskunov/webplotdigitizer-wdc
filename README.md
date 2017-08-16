@@ -5,7 +5,11 @@
 
 Are you a [Tableau](https://www.tableau.com) user? Do you have some charts or plots stored in PNGs or JPEGs? You've come to the right place! This tool allows you to bring those data into Tableau so you can use Tableau's powerful analytical capabilities to gain new insights from data locked away in image files.
 
-Based on [WebPlotDigitizer](https://github.com/ankitrohatgi/WebPlotDigitizer) by Ankit Rohatgi.
+Based on [WebPlotDigitizer](https://github.com/ankitrohatgi/WebPlotDigitizer) by [Ankit Rohatgi](https://twitter.com/ankit_rohatgi).
+
+* YouTube demo: https://youtu.be/qjz_oWTTmPk
+* Sample workbook: https://public.tableau.com/views/WebPlotDigitizer-NOAA/WashingtonStateMeanTemperature?:embed=y&:display_count=yes&publish=yes
+* Tableau community forum: https://community.tableau.com/thread/244693
 
 ## Setup For Users
 
