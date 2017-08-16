@@ -80,6 +80,11 @@ var wpd = {
   },
   "appData": {
     "getPlotData": function () {},
+    "getCorsProxy": function () {},
+    "getCorsProxyURL": function () {},
+    "setCorsProxy": function () {},
+    "getImageName": function () {},
+    "setImageName": function () {},
     "isAligned": function () {},
     "plotLoaded": function () {},
     "reset": function () {}

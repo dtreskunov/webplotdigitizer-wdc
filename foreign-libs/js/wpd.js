@@ -79,7 +79,9 @@ var wpd = wpd || {};
 // maintain and manage current state of the application
 wpd.appData = (function () {
     var isAligned = false,
-        plotData;
+        plotData,
+        corsProxy,
+        imageName;
 
     function reset() {
         isAligned = false;
@@ -104,11 +106,40 @@ wpd.appData = (function () {
         getPlotData().topColors = wpd.colorAnalyzer.getTopColors(imageData);
     }
 
+    function getCorsProxy() {
+        return corsProxy;
+    }
+
+    function setCorsProxy(val) {
+        corsProxy = val;
+    }
+
+    function getCorsProxyURL(url) {
+        if (corsProxy == null || url.substring(0, 5) === 'data:') {
+            return url;
+        } else {
+            return wpd.corsProxy + "/" + url;
+        }
+    }
+
+    function getImageName() {
+        return imageName;
+    }
+
+    function setImageName(val) {
+        imageName = val;
+    }
+
     return {
         isAligned: isAlignedFn,
         getPlotData: getPlotData,
         reset: reset,
-        plotLoaded: plotLoaded
+        plotLoaded: plotLoaded,
+        getCorsProxy: getCorsProxy,
+        getCorsProxyURL: getCorsProxyURL,
+        setCorsProxy: setCorsProxy,
+        getImageName: getImageName,
+        setImageName: setImageName
     };
 })();
 /*
@@ -4266,23 +4297,15 @@ wpd.graphicsWidget = (function () {
         hoverTimer = setTimeout(hoverOverCanvas(ev), 10);
     }
 
-    function getDroppedUri(ev, callback) {
+    function getDroppedUri(ev) {
         var uriFilter = function(uri) {
             return (uri.indexOf("http://") == 0 || uri.indexOf("https://") == 0);
         };
         var uriList = ev.dataTransfer.getData("text/plain");
         if (uriList == null) {
-            return;
+            return null;
         }
-        var uri = uriList.split(/\n/).filter(uriFilter)[0];
-        if (uri == null) {
-            return;
-        }
-        callback(uri);
-    }
-
-    function wrapCors(uri) {
-        return (wpd.corsProxy == null ? uri : wpd.corsProxy + "/" + uri);
+        return uriList.split(/\n/).filter(uriFilter)[0];
     }
 
     function dropHandler(ev) {
@@ -4290,11 +4313,13 @@ wpd.graphicsWidget = (function () {
         if (files.length === 1) {
             wpd.busyNote.show();
             fileLoader(files[0]);
-        } else {
-            getDroppedUri(ev, function(uri) {
-                wpd.busyNote.show();
-                loadImageFromSrc(wrapCors(uri));
-            });
+            return;
+        }
+        var uri = getDroppedUri(ev);
+        if (uri != null) {
+            wpd.busyNote.show();
+            loadImageFromSrc(uri);
+            return;
         }
     }
 
@@ -4419,6 +4444,7 @@ wpd.graphicsWidget = (function () {
         var originalImage = document.createElement('img');
         if (imgSrc.substring(0, 5) !== "data:") {
             originalImage.crossOrigin = "Anonymous";
+            wpd.appData.setImageName(imgSrc);
         }
         originalImage.onload = function () {
             loadImage(originalImage);
@@ -4426,7 +4452,7 @@ wpd.graphicsWidget = (function () {
                 callback();
             }
         };
-        originalImage.src = imgSrc;
+        originalImage.src = wpd.appData.getCorsProxyURL(imgSrc);
     }
 
     function loadImageFromData(idata, iwidth, iheight, doReset, keepZoom) {        
@@ -4460,6 +4486,7 @@ wpd.graphicsWidget = (function () {
             var droppedFile = new FileReader();
             droppedFile.onload = function() {
                 var imageInfo = droppedFile.result;
+                wpd.appData.setImageName(fileInfo.name);
                 loadImageFromSrc(imageInfo);
             };
             droppedFile.readAsDataURL(fileInfo);
@@ -9256,6 +9283,7 @@ wpd.saveResume = (function () {
 
        plotData.reset();
        wpd.appData.isAligned(false);
+       wpd.appData.setImageName(rdata.imageName);
         
        if(rdata.axesType == null) {
            return;
@@ -9358,6 +9386,7 @@ wpd.saveResume = (function () {
 
     function generateJSON() {
         var plotData = wpd.appData.getPlotData(),
+            imageName = wpd.appData.getImageName(),
             calibration = plotData.calibration,
             outData = {
                     wpd: {
@@ -9367,7 +9396,8 @@ wpd.saveResume = (function () {
                         calibration: null,
                         dataSeries: [],
                         distanceMeasurementData: null,
-                        angleMeasurementData: null
+                        angleMeasurementData: null,
+                        imageName: imageName
                     }
                 },
             json_string = '',

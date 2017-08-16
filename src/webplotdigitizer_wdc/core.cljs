@@ -19,6 +19,11 @@
       (.-graphicsWidget)
       (.getImageDataURL "image/jpeg" 0.92)))
 
+(defn get-image-name []
+  (-> js/wpd
+      (.-appData)
+      (.getImageName)))
+
 (defn set-json! [s]
   (when-let [obj (.parse js/JSON s)]
     (-> js/wpd
@@ -59,7 +64,6 @@
 
 (defn datasets->table-infos [datasets]
   [{:id "WebPlotDigitizer"
-    :alias "Datasets"
     :columns (mapcat dataset->column-infos datasets)}])
 
 (deftype WebPlotDigitizerWDC []
@@ -67,7 +71,7 @@
   (get-auth-type [this] "none")
   (check-auth [this state done] (done))
   (get-standard-connections [this] [])
-  (get-name [this] "WebPlotDigitizer")
+  (get-name [this] (or (get-image-name) "WebPlotDigitizer"))
   (get-table-infos [this]
     (datasets->table-infos (get-datasets)))
   (<get-rows [this table-info increment-value filter-values]
