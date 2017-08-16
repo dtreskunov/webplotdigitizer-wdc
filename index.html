@@ -65,7 +65,7 @@
     <div class="wpd-menu-dropdown">
         <ul>
             <li id="wpd-filemenu-loadimage" onclick="wpd.popup.show('loadNewImage');">Load Image</li>
-            <li id="wpd-filemenu-export-tableau" onclick="webplotdigitizer_wdc.core.go();">Return to Tableau</li>
+            <li id="wpd-filemenu-export-tableau" onclick="try {webplotdigitizer_wdc.core.go();} catch (e) {wpd.messagePopup.show('Ooops!', e)}">Return to Tableau</li>
         </ul>
     </div>
 </div>
